@@ -12,7 +12,7 @@ def handle_client(client_socket):
             print("Client:", message)
             
             # Send message back to client
-            response = input("Server: ")
+            response = "200"
             client_socket.send(response.encode())
         except ConnectionResetError:
             print("Client disconnected forcibly")
@@ -26,7 +26,8 @@ def receive_messages(client_socket):
             if not message:
                 print("Server disconnected")
                 break
-            print("Server:", message)
+            if (message != "200"):
+                print("Server:", message)
         except ConnectionResetError:
             print("Server disconnected forcibly")
             break
@@ -34,7 +35,7 @@ def receive_messages(client_socket):
 def start_server():
     # Server configuration
     server_host = '0.0.0.0'
-    server_port = 5555
+    server_port = 5561
 
     # Start server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -52,7 +53,7 @@ def start_server():
 
 def start_client():
     # Client configuration
-    client_port = 5556
+    client_port = 5560
 
     # Start client
     client_host = input("Enter the IP address to connect to: ")
