@@ -34,7 +34,7 @@ def receive_messages(client_socket):
 def start_server():
     # Server configuration
     server_host = '0.0.0.0'
-    server_port = 5557
+    server_port = 5555
 
     # Start server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,11 +47,12 @@ def start_server():
         print("Client connected from:", addr)
 
         client_handler = threading.Thread(target=handle_client, args=(client_socket,))
+        client_handler.setDaemon(True)  # Set as daemon thread
         client_handler.start()
 
 def start_client():
     # Client configuration
-    client_port = 5558
+    client_port = 5556
 
     # Start client
     client_host = input("Enter the IP address to connect to: ")
@@ -61,6 +62,7 @@ def start_client():
 
     # Start a thread to receive messages from server
     receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
+    receive_thread.setDaemon(True)  # Set as daemon thread
     receive_thread.start()
 
     # Main thread to send messages to the server
@@ -71,11 +73,17 @@ def start_client():
 def main():
     # Start server thread
     server_thread = threading.Thread(target=start_server)
+    server_thread.setDaemon(True)  # Set as daemon thread
     server_thread.start()
 
     # Start client thread
     client_thread = threading.Thread(target=start_client)
+    client_thread.setDaemon(True)  # Set as daemon thread
     client_thread.start()
+
+    # Keep the main thread running
+    while True:
+        pass
 
 if __name__ == "__main__":
     main()
