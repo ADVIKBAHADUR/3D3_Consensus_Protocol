@@ -8,7 +8,7 @@ node_list = []  # global Variable to hold the IP addresses of the nodes in the g
 
 #self_ip_addr = socket.gethostbyname(socket.gethostname())
 self_ip_addr = '0.0.0.0'
-srvr_ip_addr = '10.6.86.44'
+srvr_ip_addr = '192.168.24.71'
 print(f"Self IP Address= {self_ip_addr}")
 srvr_tcp_port = 5090
 self_tcp_port = 5091

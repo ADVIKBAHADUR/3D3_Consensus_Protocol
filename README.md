@@ -1,3 +1,7 @@
 # 3D3_Consensus_Protocol
-This is where the team codes
-yes
+
+### Disable Firewall - For Linux Users
+sudo systemctl disable firewalld;
+sudo systemctl disable iptables;
+sudo systemctl stop firewalld;
+sudo systemctl stop iptables;

@@ -53,7 +53,7 @@ def start_server():
 
 def start_client():
     # Client configuration
-    client_port = 5560
+    client_port = 5595
 
     # Start client
     client_host = input("Enter the IP address to connect to: ")
