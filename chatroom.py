@@ -5,16 +5,21 @@ import time
 import sys
 
 node_list = []  # global Variable to hold the IP addresses of the nodes in the group
+udp_port_list = [] # global Variable to hold the port list of the nodes in the group
+tcp_port_list = []
 
 #self_ip_addr = socket.gethostbyname(socket.gethostname())
 self_ip_addr = '0.0.0.0'    # Does NOT need changing
 srvr_ip_addr = '0.0.0.0'    # Does need changing
-srvr_tcp_port = 5090
-self_tcp_port = 5091
-udp_port = 5190
-snd_udp_port = 5188
+srvr_tcp_port = 5090        # Static - does not change
+self_tcp_port = 0        # This should change for each IP
+udp_port = 0             # Port where data is received
+snd_udp_port = 4000         # Port where data is sent
 srvr_con_sts = "Server is Down"
 your_prompt = "(You) >>> "
+
+host_number = 0
+client_number_list = []
 
 UP = '\033[1A'
 CLEAR = '\x1b[2K'
@@ -24,14 +29,35 @@ sent_ips = 0
 ACKED_ips = 0
 wait_for_ACK = False
 
-ACK_char = 'ơ̴̧̧̨̧̮̩͖̮͙͉͇͖̳͓̣̰̥͔͈̙͚̥̭͖͍̭͖̙̼̰͖̗̗̮̳͎̤̘̱̠͔̄̅̎̊̉͐̓̚͜͜ͅͅ'
+ACK_char = "ơ̴̧̧̨̧̮̩͖̮͙͉͇͖̳͓̣̰̥͔͈̙͚̥̭͖͍̭͖̙̼̰͖̗̗̮̳͎̤̘̱̠͔̄̅̎̊̉͐̓̚͜͜ͅͅ"
+
+def set_ports():
+    global srvr_tcp_port
+    global self_tcp_port
+    global udp_port
+    global snd_udp_port
+
+    if udp_port != 0:
+        udp_port = random.rand_int(2000, 18000)
+        while (udp_port == srvr_tcp_port) or (udp_port == snd_udp_port):
+            udp_port = random.rand_int(2000, 18000)
+    if self_tcp_port != 0:
+        self_tcp_port = random.rand_int(2000, 18000)
+        while (self_tcp_port == srvr_tcp_port) or (self_tcp_port == snd_udp_port) or (self_tcp_port == udp_port):
+            self_tcp_port = random.rand_int(2000, 18000)
+
+def set_unsigned_char(value):
+    if 0 <= value <= 255:
+        return value
+    else:
+        raise ValueError("Value must be in the range of an unsigned 8-bit number (0-255)")
 
 def get_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(0)
         try:
             # does not need to be reachable
-            s.connect(('10.254.254.254', 1))
+            s.connect(('11.247.223.253', 1))
             IP = s.getsockname()[0]
         except Exception:
             IP = '127.0.0.1'
@@ -43,14 +69,14 @@ def get_ip():
 # b. Send CHAT Message in the group 
 def send_udp_msg(udp_sock, msg):
     global node_list
+    global port_list
     global sent_ips
     global ACKED_ips
     global wait_for_ACK
     wait_for_ACK = True
     serialised_data = pickle.dumps(msg)
-    #print(pickle.dumps(msg))
-    for ip_addr in node_list: 
-      if(ip_addr != self_ip_addr):
+    for index, port in enumerate(udp_port_list): 
+      if(port != udp_port) and (node_list(index) != self_ip_addr):
         try:
           udp_sock.sendto(serialised_data,(ip_addr, udp_port))
         except socket.error as err:
@@ -105,14 +131,24 @@ def print_userlist():
     global node_list
     print(f"Nodes available to send the message : {node_list}")    
 
+def exists_in_these_lists(item1, item2, list1, list2):   
+    for index, list2item in enumerate(list2):
+        if list2item == item2:
+            if list1[index] == item1:
+                return index
+    return None
+
 # TCP Server - Sub function - Active Connection Thread - Sends the Updated Node(IP) List
 # to all Nodes in the group in UDP message
 def start_conn_thread(conn,bc_sock,addr):
     global node_list
+    global tcp_port_list
+    global client_number_list
     print(f"Client Node Connected at Server : {addr}")
     print(f"Connection is: {conn}")
-    if addr[0] not in node_list:
+    if not exists_in_these_lists(addr[0], addr[1], node_list, tcp_port_list):
       node_list.append(addr[0])
+      tcp_port_list.append(addr[1])
       send_udp_msg(bc_sock,node_list)
       print(f"New Node {addr} Added in Node List \nNow Updated Node List at Server {node_list}")
     while True:
@@ -121,17 +157,22 @@ def start_conn_thread(conn,bc_sock,addr):
         if not msg:
           conn.close()
           print(f"Server Side No msf recv Error occurred")
-          if (addr[0]):
-            node_list.remove(addr[0])
-          send_udp_msg(bc_sock,node_list)
-          print(f"Node {addr} removed from Node List \nNow Updated Node List at Server {node_list}")
+          ind = exists_in_these_lists(addr[0], addr[1], node_list, tcp_port_list)
+          if (ind):
+                node_list.pop(ind)
+                tcp_port_list.pop(ind)
+                send_udp_msg(bc_sock,node_list)
+                print(f"Node {addr} removed from Node List \nNow Updated Node List at Server {node_list}")
           break
       except socket.error as err:
         conn.close()
         print(f"Server Side conn.recv Error : {err}")
-        node_list.remove(addr[0])
-        send_udp_msg(bc_sock,node_list)
-        print(f"Node {addr} removed from Node List \n Now Updated Node List at Server {node_list}")
+        ind = exists_in_these_lists(addr[0], addr[1], node_list, tcp_port_list)
+        if (ind):
+            node_list.pop(ind)
+            tcp_port_list.pop(ind)
+            send_udp_msg(bc_sock,node_list)
+            print(f"Node {addr} removed from Node List \n Now Updated Node List at Server {node_list}")
         break
 
 
@@ -216,9 +257,9 @@ def start_conn_upd():
               else:
                 dmsg = pickle.loads(msg)
                 if dmsg != '' and dmsg != '\n': 
-                    if dsmeg != ACK_char:
-                        udp_sock.sendto(pickle.dumps(ACK_char),(addr, udp_port))
-                        print(f"{addr[0]} | {dmsg}")
+                    if dmsg != ACK_char:
+                        conn_upd_sock.sendto(pickle.dumps(ACK_char),(addr[0], udp_port))
+                        print(f"{addr} | {dmsg}")
                         print(your_prompt, end = "")
                     else:
                         if (wait_for_ACK):
@@ -236,7 +277,7 @@ def main():
     self_ip_addr = get_ip()
     print(f"\n\t--- Your IP Address is: {self_ip_addr} ---\n")
     choice = input("Type \"1\" for SERVER. Or press any key for CLIENT\n>>> ")
-
+    set_ports()
     if choice == "1" :
         print("Creating Server Thread...", end='')
         srvr_thread = threading.Thread(target=start_server,)
