@@ -193,7 +193,8 @@ def main():
     receive_thread.start()
 
     if user_input_port != "":
-        if user_input.isdigit():
+        if user_input_port.isdigit():
+            print("Cry")
             node.queue_message("Handshake", (user_input_ip, int(user_input_port)) )
             node.request_userlist()
     
