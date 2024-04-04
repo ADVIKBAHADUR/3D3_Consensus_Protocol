@@ -4,7 +4,6 @@ import time
 import pickle
 import random
 import queue
-import argparse
 
 def get_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -33,12 +32,6 @@ class P2PNode:
         self.message_thread.daemon = True
         self.message_thread.start()
 
-        self.ack_char = "ô̵̱"
-        self.touch_char = "t̷̻̂"
-        self.userlist_char = "é̵̡"
-        self.request_userlist_char = "l̶̮͛"
-        self.msg_char = "m̴̬͒"
-
     def add_bad_node(self, addr):
         if addr not in self.last_bad_nodes:
             self.last_bad_nodes.append(addr)
@@ -48,7 +41,6 @@ class P2PNode:
             self.last_bad_nodes.remove(addr)
 
     def send_message(self, message, in_node = None):
-        print(f"in_node: {in_node}")
         if in_node is not None:
             if (in_node in self.last_bad_nodes):
                 return
@@ -58,12 +50,12 @@ class P2PNode:
                 check_nodes = [row[:2] for row in self.connected_nodes]
                 #print(f"nodez {check_nodes}")
                 if in_node not in check_nodes:
-                    self.connected_nodes.append(in_node[0], in_node[1], 3)
+                    self.connected_nodes.append((in_node[0], in_node[1], 3))
                     self.request_userlist()
             else:
-                self.connected_nodes.append(in_node[0], in_node[1], 3)
+                self.connected_nodes.append((in_node[0], in_node[1], 3))
                 self.request_userlist()
-            if (message == self.ack_char):
+            if (message == "ACK"):
                 self.sock.sendto(pickle.dumps(message), in_node)
                 return
         else: pass
@@ -108,6 +100,8 @@ class P2PNode:
         while True:
             message = self.message_queue.get()
             in_node = self.message_queue.get()
+            #print(f"process mess:{in_node}")
+            #print(f"process node:{in_node}")
             if (in_node == ('0.0.0.0', 0000)):
                 self.send_message(message)
             else: self.send_message(message, in_node)
@@ -118,8 +112,7 @@ class P2PNode:
                 data, addr = self.sock.recvfrom(1024)
                 self.del_bad_node(addr)
                 message = pickle.loads(data)
-                print(f"msg{message}")
-                if message != self.ack_char:
+                if message != "ACK":
                     #self.sock.sendto(pickle.dumps("ACK", addr))
                     #print(f"msg1{addr}")
                     #if (self.connected_nodes != []):
@@ -128,9 +121,10 @@ class P2PNode:
                        #     self.connected_nodes.append((self.ip, addr[1], 3))
                    # else: self.connected_nodes.append((self.ip, addr[1], 3))
                     
-                    self.send_message(self.ack_char, addr)  # Send ACK
+                    self.send_message(("ACK"), addr)  # Send ACK
 
-                    print(f"{addr[0]}|{addr[1]}> {message}")
+
+                    print(f"Received message from {addr}: {message}")
                     if isinstance(message, list):
                         #print(f"msg re: {message}")
                         self.userlist_man(message, addr)
@@ -149,7 +143,7 @@ class P2PNode:
 
     def request_userlist(self):
         check_nodes = [row[:2] for row in self.connected_nodes]
-        self.queue_message(self.request_userlist_char, check_nodes)
+        self.queue_message(check_nodes)
 
     def userlist_man(self, conn_nodes, addr):
         #print(f"\nconn: {conn_nodes}\n")
@@ -164,7 +158,7 @@ class P2PNode:
             check_nodes = [row[:2] for row in evil]
             for addr in ss:
                 if addr not in check_nodes:
-                    self.queue_message(self.touch_char, addr)
+                    self.queue_message("N", addr)
                 for addr in check_nodes:
                     if addr not in ss:
                         if addr != sa:
@@ -174,18 +168,17 @@ class P2PNode:
         if clean_list == False:
             self.request_userlist()
 
-def main(value = None):
-
+def main():
     CLEAR_SCREEN = '\u001Bc'
     print("", end=CLEAR_SCREEN)
 
-    if value is not None:
-        if value == 1:
-            my_ip = '127.0.0.1'
+    my_port_number = random.randint(2000, 9999)
+
+    user_input = input("1 or any for local or outside: ")
+    if (user_input == "1"):
+        my_ip = '127.0.0.1'
     else:
         my_ip = get_ip()
-
-    my_port_number = random.randint(2000, 9999)
     node = P2PNode(my_ip, my_port_number)
 
     print(f"\n\t--- Your IP is: {my_ip} ---\n\t--- Your Port is: {my_port_number} ---\n")
@@ -199,11 +192,11 @@ def main(value = None):
 
     if user_input != "":
         if user_input.isdigit():
-            node.queue_message(node.touch_char, (my_ip, int(user_input)) )
+            node.queue_message("Handshake", (my_ip, int(user_input)) )
             node.request_userlist()
-
-    print("Send messages, or type /help for more")
     
+    print("Send messages, or type /help for more")
+
     # Keep the main thread alive
     while True:
         while node.message_queue.empty():
@@ -220,11 +213,7 @@ def main(value = None):
     node.sock.close()  # Close the socket when done
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Optional integer parameter")
-    parser.add_argument("-v", "--value", type=int, help="An optional integer value")
-    args = parser.parse_args()
-
-    main(args.value)
+    main()
 
 
 
