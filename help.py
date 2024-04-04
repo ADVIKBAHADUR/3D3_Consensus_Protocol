@@ -184,7 +184,10 @@ def main():
     print(f"\n\t--- Your IP is: {my_ip} ---\n\t--- Your Port is: {my_port_number} ---\n")
 
     user_input_ip = input("Their IP Address: ")
-    user_input_ip = '192.168.24.124'
+    if (user_input == "1"):
+        user_input_ip = my_ip
+    else:
+        user_input_ip = '192.168.24.124'
     user_input_port = input("Their port number (Skip if you're the first): ")
 
     # Start thread for receiving messages from other nodes
