@@ -183,7 +183,8 @@ def main():
 
     print(f"\n\t--- Your IP is: {my_ip} ---\n\t--- Your Port is: {my_port_number} ---\n")
 
-    user_input = input("Their port number (Skip if you're the first): ")
+    user_input_ip = input("Their IP Address")
+    user_input_port = input("Their port number (Skip if you're the first): ")
 
     # Start thread for receiving messages from other nodes
     receive_thread = threading.Thread(target=node.receive_messages)
@@ -192,7 +193,7 @@ def main():
 
     if user_input != "":
         if user_input.isdigit():
-            node.queue_message("Handshake", (my_ip, int(user_input)) )
+            node.queue_message("Handshake", (user_input_ip, int(user_input_port)) )
             node.request_userlist()
     
     print("Send messages, or type /help for more")
